@@ -21,6 +21,7 @@ public class PlayerSpawnObject : NetworkBehaviour
 
     [Header("Stats Server")]
     [SyncVar] public int _health = 4;
+    [SyncVar(hook = nameof(OnSpeedChanged))] private float syncSpeed;
 
     public void Update()
     {
@@ -61,17 +62,47 @@ public class PlayerSpawnObject : NetworkBehaviour
         // 로컬 플레이어의 이동
         float vertical = Input.GetAxis("Vertical");
         Vector3 forward = transform.TransformDirection(Vector3.forward);
-        NavAgent_Player.velocity = forward * Mathf.Max(vertical, 0) * NavAgent_Player.speed;
-        Animator_Player.SetBool("Moving", NavAgent_Player.velocity != Vector3.zero);
-        
-        // 공격
-        if(Input.GetKeyDown(_attKey))
+
+        //NavAgent_Player.velocity = forward * Mathf.Max(vertical, 0) * NavAgent_Player.speed;
+        //Animator_Player.SetBool("Moving", NavAgent_Player.velocity != Vector3.zero);
+
+        float playerSpeed = NavAgent_Player.speed;
+
+       
+
+        if(Input.GetKey(KeyCode.LeftShift))
         {
-            CommandAtk();          
+            playerSpeed *= 2;
         }
 
-        RotateLocalPlayer();
+        NavAgent_Player.velocity = forward * Mathf.Max(vertical, 0) * playerSpeed;
 
+        //Animator_Player.SetBool("Moving", NavAgent_Player.velocity.sqrMagnitude > 0.1f);
+        //Animator_Player.SetBool("Dashing", NavAgent_Player.velocity.sqrMagnitude > 9.0f);
+
+        //Animator_Player.SetFloat("Speed", NavAgent_Player.velocity.magnitude);
+
+        CmdSetSpeed(NavAgent_Player.velocity.magnitude);
+
+        // 공격
+        if (Input.GetKeyDown(_attKey))
+        {
+            CommandAtk();
+        }
+
+
+        RotateLocalPlayer();
+    }
+
+    [Command]
+    private void CmdSetSpeed(float speed)
+    {
+        syncSpeed = speed;
+    }
+
+    private void OnSpeedChanged(float oldSpeed, float newSpeed)
+    {
+        Animator_Player.SetFloat("Speed", newSpeed);
     }
 
     // 마우스 위치를 기반으로 레이캐스트를 수행 -> 플레이어 회전 
@@ -98,6 +129,7 @@ public class PlayerSpawnObject : NetworkBehaviour
         RpcOnAtk();
     }
 
+    // 서버에서 호출되지만 클라이언트에서 실행되는 RPC 메서드
     [ClientRpc]
     private void RpcOnAtk()
     {
