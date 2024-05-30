@@ -24,11 +24,15 @@ public class PlayerSpawnObject : NetworkBehaviour
 
     public void Update()
     {
+        string netTypeStr = isClient ? "클라" : "클라아님";
+
+        TextMesh_NetType.text = this.isLocalPlayer ? $"[로컬/{netTypeStr}] {this.netId}" : 
+            $"[로컬아님{netTypeStr}] {this.netId}";
+
         SetHealthBarOnUpdate(_health);
 
         if (CheckIsFocusedOnUpdate() == false)
             return;
-
 
         CheckIsLocalPlayerOnUpdate();
     }
